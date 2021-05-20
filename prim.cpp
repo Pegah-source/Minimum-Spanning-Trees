@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <chrono>
+using namespace std::chrono;
 #include "prim.hpp"
 
 const int INF = 1000000;
@@ -45,9 +47,10 @@ int minConnector(int nNodes,int weights[],bool Set[]){
     return min_index;
 }
 void prim(int nNodes,int** Graph){
-    int *parent = new int[nNodes];
-    int weights[nNodes];
-    bool Set[nNodes];
+    auto start = high_resolution_clock::now();
+    int *parent = new int[nNodes];/*to indicate the **possible** parent of each node in the MST*/
+    int weights[nNodes];/*the weight of the min edge that connects the node to MST tree*/
+    bool Set[nNodes];/*to indicate whether the node is in the MST*/
 
     //initialization of these arrays:
 
@@ -83,7 +86,7 @@ void prim(int nNodes,int** Graph){
         for (int j = 0; j < nNodes; j++)
         {
 
-            if (Graph[u][j])//if there is any edge from u to i
+            if (Graph[u][j] != 0)//if there is any edge from u to i
             {
                 if (Set[j] == false)//if we have not yet the node i in the Set
                 {
@@ -99,7 +102,9 @@ void prim(int nNodes,int** Graph){
         }
         
     }
-
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(stop - start);
+    std::cout << "the process took  " << duration.count() << "  micro seconds" << std::endl;
     printGraph(nNodes,parent,Graph);
     return;
 }

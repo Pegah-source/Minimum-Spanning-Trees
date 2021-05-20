@@ -2,18 +2,22 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <chrono>
+using namespace std::chrono;
 #include "boruvka.hpp"
 
 //what do we expect from our data structures?
 //we need to access the weight of each edge, so the edge : first end,second end,weight
 //for Union find we need to know the source (representer)
+
 void boruvka(Graph *Graph){
+    auto start = high_resolution_clock::now();
     int nNodes = Graph->nNodes;int nEdges = Graph->nEdges;
     struct Edge* Edge = Graph->edge;
 
     //subset structure is to keep the track of a set
     subset* subsets = new subset[nNodes];
-    //and to keep the cheapest way from a subset to outside we define:
+    //and to keep the cheapest way from a subset(node in a subset) to outside we define:
     //it's actually the index of the corresponding edge
     int* cheapest = new int[nNodes];
 
@@ -21,7 +25,7 @@ void boruvka(Graph *Graph){
     for (int i = 0; i < nNodes; i++)
     {
         subsets[i].parent = i;
-        subsets[i].rank = i;
+        subsets[i].rank = 0;
         cheapest[i] = -1;
     }
     
@@ -29,6 +33,8 @@ void boruvka(Graph *Graph){
     int nSets = nNodes;
     //and to save the weight of the MST
     int weightMst = 0;
+
+    std::cout << "node1 : node2 : edge weight" << std::endl;
 
     while (nSets > 1)
     {
@@ -38,9 +44,9 @@ void boruvka(Graph *Graph){
         for (int i = 0; i < nNodes; i++)
         {
             cheapest[i] = -1;
-        }//this is because in each loop we again look at each subset and the value each time this value changes
+        }//this is because in each loop we again look at each subset and each time this value probably changes
 
-        for (int i = 0; i < nEdges; i++)
+        for (int i = 0; i < nEdges; i++)//we go through all of the edges
         {
             int firstSet = find(subsets,Edge[i].start);
             int secondSet = find(subsets,Edge[i].end);
@@ -63,21 +69,20 @@ void boruvka(Graph *Graph){
         }
 
         //now we will add the choosen edges
-
         for (int i = 0; i < nNodes; i++)
         {
-            if (cheapest[i] != -1)//if this is -1, it means that we already have treated this edge
+            if (cheapest[i] != -1)//if this is -1, it means that we already have the edge connected to this node in the MST OR the edges connected to this node are not optimal to connect two sets
             {
                 int firstSet = find(subsets,Edge[cheapest[i]].start);
                 int secondSet = find(subsets,Edge[cheapest[i]].end);
-
-                if (firstSet == secondSet)
+                if (firstSet == secondSet)//we have to check this condition because we may connect two sets not directly in the for
                 {
                     continue;
                 }else{
                     Union(subsets,firstSet,secondSet);
                     weightMst += Edge[cheapest[i]].weight;
                     nSets--;
+                    std::cout << Edge[cheapest[i]].start << " " << Edge[cheapest[i]].end << " " << Edge[cheapest[i]].weight << std::endl;
                 }
             }
             
@@ -85,8 +90,9 @@ void boruvka(Graph *Graph){
         
         
     }
-    
-
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(stop - start);
+    std::cout << "the process took  " << duration.count() << "  micro seconds" << std::endl;
     std::cout << "the weight of MST is : " << weightMst << std::endl;
     return;
 }
@@ -96,9 +102,10 @@ int find(struct subset* subsets, int i){
     //to find the node that represents the subset
     while (subsets[i].parent != i)
     {
-        subsets[i].parent = find(subsets,subsets[i].parent);
+        i = subsets[i].parent;
+        /*subsets[i].parent = find(subsets,subsets[i].parent);*/
     }
-    return subsets[i].parent;
+    return i;
 }
 
 void Union(struct subset* subsets, int x, int y){
@@ -157,6 +164,6 @@ int main(){
 
     Graph *Graph = new struct Graph;
     receiveGraph(Graph);
-
+    boruvka(Graph);
     return 0;
 }

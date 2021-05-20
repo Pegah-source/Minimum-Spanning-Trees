@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <chrono>
+using namespace std::chrono;
 #include "kruskal.hpp"
 
 
@@ -48,7 +50,7 @@ void receiveGraph(Graph* Graph){
 
 int kruskal(Graph* Graph){
     //first we need to sort all the edges 
-
+    auto start = high_resolution_clock::now();
     std::sort(Graph->edge,(Graph->edge)+Graph->nEdges,edgeCompare);
     //now we have to go through all edges from the bginning of the sorted array
     //and add as much edge as we can without making loops, until getting a connected graph
@@ -63,6 +65,7 @@ int kruskal(Graph* Graph){
     {
         parents[i] = i;
     }
+    std::cout << "node 1 : node2 : weight" << std::endl;
     int iterate = 0;
     while (nSets > 1)
     {
@@ -75,12 +78,16 @@ int kruskal(Graph* Graph){
         {
             continue;
         }else{
+            std::cout << (Graph->edge)[iterate].start << " " << (Graph->edge)[iterate].end << " " << (Graph->edge)[iterate].weight << std::endl;
             Union(set1,set2,parents);
             nSets--;
             weightMST += (Graph->edge)[iterate].weight;
         }
         iterate++;
     }
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(stop - start);
+    std::cout << "the process took  " << duration.count() << "  micro seconds" << std::endl;
     return weightMST;
 }
 

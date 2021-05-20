@@ -31,7 +31,7 @@ void init_MPI(int argc, char** argv) {
 	MPI_Type_contiguous(3, MPI_INT, &mpi_edge);//we have already defined mpi_edge as a MPI_Datatype
 	MPI_Type_commit(&mpi_edge);
 
-	vertice_process = num_vertice / num_process;
+	vertice_process = num_vertice / num_process;//number of nodes associated with each process
 
 
 	/*if (rank == root) {

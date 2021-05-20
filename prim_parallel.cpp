@@ -51,16 +51,16 @@ void check_conditions() {
 
 	/* Check for error conditions */
 	unsigned char isError = 0;
-	if (number_of_vertices < number_of_processors) {
-		printf("Number of vertices (%d) is smaller than number of processors (%d)\n", number_of_vertices, number_of_processors);
+	if (num_vertice < num_process) {
+		printf("Number of vertices (%d) is smaller than number of processors (%d)\n", num_vertice, num_process);
 		isError = 1;
 	}
-	if (number_of_vertices % number_of_processors != 0) {
+	if (num_vertice % num_process != 0) {
 		puts("Number of vertices % number of processors must be 0\n");
 		isError = 1;
 	}
-	if (starting_vertex > number_of_vertices) {
-		printf("Invalid start vertice. Must be < %d\n", number_of_vertices);
+	if (starting_vertex > num_vertice) {
+		printf("Invalid start vertice. Must be < %d\n", num_vertice);
 		isError = 1;
 	}
 
@@ -109,6 +109,23 @@ void init_data_structures() {
 	}
 
 }
+int get_global_vertex_index(int localIndex) {
+	/* Converts global vertex index to local depending on process */
+	if (localIndex == -1 || rank == 0) {
+		return localIndex;
+	} else {
+		return localIndex + (rank * num_vertice_process);
+	}
+}
+
+int get_local_vertex_index(int globalIndex) {
+	/* Converts local vertex index to global depending on process */
+	int localIndex = -1;
+	if ((globalIndex >= rank * num_vertice_process) && (globalIndex < (rank + 1) * num_vertice_process)) {
+		localIndex = globalIndex - (rank * num_vertice_process);
+	}
+	return localIndex;
+}
 
 void parse_input() {
 
@@ -133,7 +150,7 @@ void parse_input() {
 
         //we only should consider the edges that are either completely in the selected part or either connected to this selected set of vertices
 		if ((v >= rank_range_start) && (v < rank_range_end)) {
-			weight[u][get_local_vertex_index(v)] = edge_weight;
+			weight[u][get_global_vertex_index(v)] = edge_weight;
 		}
 		if ((u >= rank_range_start) && (u < rank_range_end)) {
 			weight[v][get_local_vertex_index(u)] = edge_weight;
@@ -145,23 +162,6 @@ void parse_input() {
 	MPI_Barrier(MPI_COMM_WORLD);//Synchronization between MPI processes
 }
 
-int get_global_vertex_index(int localIndex) {
-	/* Converts global vertex index to local depending on process */
-	if (localIndex == -1 || rank == 0) {
-		return localIndex;
-	} else {
-		return localIndex + (rank * vertices_per_process);
-	}
-}
-
-int get_local_vertex_index(int globalIndex) {
-	/* Converts local vertex index to global depending on process */
-	int localIndex = -1;
-	if ((globalIndex >= rank * vertices_per_process) && (globalIndex < (rank + 1) * vertices_per_process)) {
-		localIndex = globalIndex - (rank * vertices_per_process);
-	}
-	return localIndex;
-}
 
 void update_distances(int addedVertex) {
 
@@ -220,9 +220,7 @@ void find_mst() {
 		sendbuf[2] = d[min]; //d[v]
 
 		/* Gather all results and find vertex with global minimum */
-		start_communication_measure();
 		MPI_Reduce(sendbuf, recvbuf, 3, MPI_INT, reduce_op, 0, MPI_COMM_WORLD);
-		end_communication_measure();
 
 		int u, v, globalMin;
 		if (rank == root) {
@@ -242,7 +240,7 @@ void find_mst() {
 
 		/* Mark vertex as in tree for appropriate process */
 		if (get_local_vertex_index(globalMin) != -1) {
-			in_tree[get_local_vertex_index(globalMin)] = 1;
+			in_MST[get_local_vertex_index(globalMin)] = 1;
 		}
 
 		update_distances(globalMin);
@@ -283,8 +281,8 @@ void free_resources() {
 
 	free(weight);
 	free(d);
-	free(who);
-	free(in_tree);
+	free(vertice_d);
+	free(in_MST);
 
 	/* Shut down MPI */
 	MPI_Type_free(&edge);
@@ -310,7 +308,7 @@ void printDistances() {
 	}
 }
 
-/*void start_computation_measure() {
+void start_computation_measure() {
 	comp_start_time = MPI_Wtime();
 }
 
@@ -342,7 +340,7 @@ void print_measurement_times() {
 		total_comm_time,
 		parse_end_time - parse_start_time);
 	}
-}*/
+}
 
 int main(int argc, char** argv) {
 
@@ -357,17 +355,17 @@ int main(int argc, char** argv) {
 
 	init_data_structures();
 
-	//start_parse_measure();
+	start_parse_measure();
 	parse_input();
-	//end_parse_measure();
+	end_parse_measure();
 
-	//start_computation_measure();
+	start_computation_measure();
 	find_mst();
-	//end_computation_measure();
+	end_computation_measure();
 
-	//print_measurement_times();
+	print_measurement_times();
 
-	//printMSTEdges();
+	printMSTEdges();
 
 	free_resources();
 
